@@ -1,4 +1,5 @@
 import logging
+from os import path
 
 from fastapi import FastAPI, HTTPException, Path, Query, Request, Response
 from fastapi.responses import JSONResponse
@@ -34,4 +35,36 @@ def listar_produtos():
     return {
         "dados": [representar_produto(produto) for produto in produtos],
         "sintaxesql": {"sql": sql, "parametros": []},
+    }
+
+@app.get("/produtos/{produto_id}")
+def consultar_produtoo(produto_id: int = Path(gt=0)):
+    sql = "Select id, nome, categoria, preco FROM produtos WHERE id = = %s"
+    parametros = (produto_id,)
+    produtos = executar_sql(sql, parametros)
+
+    if not produtos:
+        raise HTTPException(status_code=404, detail="Produtonão encontrado.")
+
+    return {
+        "dados": representar_produto(produtos[0]),
+        "sintaxesql": {"sql": sql, "parametros": list (parametros)}
+    }
+
+@app.get("/produtos_categoria")
+def listar_produtos_por_categoria (
+    categoria: str | None= Query(default=None, min_length=1, max_length=50)
+):
+    sql = "Select id, nome, categoria, preco FROM produtos"
+    parametros = ()
+
+    if categoria is not None:
+        sql += "WHERE categoria = %s"
+        parametros = (categoria,)
+
+    produtos = executar_sql(sql, parametros)
+
+    return {
+        "dados": [representar_produto(produto) for produto in produtos],
+        "sintaxesql": {"sql": sql, "parametros": list(parametros)},
     }
